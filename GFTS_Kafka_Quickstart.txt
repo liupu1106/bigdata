@@ -1,0 +1,90 @@
+Kafka Quickstart in our cluster
+
+Reference: http://kafka.apache.org/documentation.html#quickstart
+
+0. Zookeeper servers: 
+	169.172.134.168:2182
+	169.172.134.167:2182
+	169.172.134.169:2182
+
+1. Kafka servers:
+	broker 0: 169.172.134.169:9092
+	broker 1: 169.172.134.168:9092
+	broker 2: 169.172.134.167:9092
+	
+2. Start kafka server:
+	> bin/kafka-server-start.sh config/server.properties &
+	
+	# Tip
+	If you get the following log information, the kafka server has been started.
+	=> ...
+	=> [2016-04-07 02:03:26,522] INFO Kafka version : 0.9.0.1 (org.apache.kafka.common.utils.AppInfoParser)
+	=> [2016-04-07 02:03:26,522] INFO Kafka commitId : 23c69d62a0cabf06 (org.apache.kafka.common.utils.AppInfoParser)
+	=> [2016-04-07 02:03:26,523] INFO [Kafka Server 2], started (kafka.server.KafkaServer)
+	
+3. Create a topic:
+	> bin/kafka-topics.sh --create --zookeeper <HOST:PORT>[[,<HOST:PORT>]...] \
+	> --replication-factor <INT> \
+	> --partitions <INT> \
+	> --topic <TOPIC NAME>
+	
+	# e.g.
+	> bin/kafka-topics.sh --create --zookeeper 169.172.134.168:2182,169.172.134.167:2182,169.172.134.169:2182 \
+	> --replication-factor 3 \
+	> --partitions 1 \
+	> --topic my-replicated-topic
+	
+	If you get the following output, the topic has been created.
+	=> Created topic "my-replicated-topic".
+	
+4. Describe a topic:
+	> bin/kafka-topics.sh --describe --zookeeper <HOST:PORT>[[,<HOST:PORT>]...] \
+	> --topic <TOPIC NAME>
+	
+	# e.g.
+	> bin/kafka-topics.sh --describe --zookeeper 169.172.134.168:2182,169.172.134.167:2182,169.172.134.169:2182 \
+	> --topic my-replicated-topic
+	
+	You will get the following output:
+	Topic:my-replicated-topic       PartitionCount:1        ReplicationFactor:3     Configs:
+        Topic: my-replicated-topic      Partition: 0    Leader: 1       Replicas: 1,2,0 Isr: 2,0,1
+	
+	Here is an explanation of output. 
+	The first line gives a summary of all the partitions, each additional line gives information about one partition. 
+	Since we have only one partition for this topic there is only one line.
+	<leader> is the node responsible for all reads and writes for the given partition. Each node will be the leader 
+			 for a randomly selected portion of the partitions.
+	<replicas> is the list of nodes that replicate the log for this partition regardless of whether they are the leader 
+			   or even if they are currently alive.
+	<isr> is the set of "in-sync" replicas. This is the subset of the replicas list that is currently alive and caught-up 
+		  to the leader.
+
+5. 	Start kafka console producer:
+	> bin/kafka-console-producer.sh --broker-list <HOST:PORT>[[,<HOST:PORT>]...] --topic <TOPIC NAME>
+	> <Type message>
+	> ...
+
+	# e.g.
+	> bin/kafka-console-producer.sh --broker-list 169.172.134.168:9092,169.172.134.167:9092,169.172.134.169:9092 \
+	> --topic my-replicated-topic
+	> it's a message.
+	> it's another message.
+	> it;s yet another message.
+	> ^C
+
+6.	Start kafka console consumer:
+	> bin/kafka-console-consumer.sh --zookeeper <HOST:PORT>[[,<HOST:PORT>]...] \
+	> --from-beginning \
+	> --topic <TOPIC NAME>
+	> <Receive message from producer>
+	> ...
+	
+	# e.g.
+	> bin/kafka-console-consumer.sh --zookeeper 169.172.134.168:2182,169.172.134.167:2182,169.172.134.169:2182 \
+	> --from-beginning \
+	> --topic my-replicated-topic
+	> it's a message.
+	> it's another message.
+	> it;s yet another message.
+	> ^C
+	> Processed a total of 3 messages
